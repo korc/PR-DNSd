@@ -1,0 +1,18 @@
+#!/sbin/iptables-restore -n
+
+# need to run first:
+#  ipset create throttled-ips hash:ip timeout 600 family inet maxelem 100000
+
+*raw
+-A PREROUTING -p udp -m set --match-set throttled-ips src -j DROP
+COMMIT
+
+*filter
+:LARGE_DNS_PACKET_TRACKING - [:]
+-A OUTPUT -p udp -m udp --sport 53 -m length --length 700:65535 -j LARGE_DNS_PACKET_TRACKING
+-A LARGE_DNS_PACKET_TRACKING -m hashlimit --hashlimit-upto 50/min --hashlimit-burst 10 --hashlimit-mode dstip --hashlimit-name large-dns-packets --hashlimit-htable-max 100000 -j ACCEPT
+-A LARGE_DNS_PACKET_TRACKING -j SET --add-set throttled-ips dst --exist --timeout 600
+-A LARGE_DNS_PACKET_TRACKING -j LOG --log-prefix "DNS-amplification protection:"
+-A LARGE_DNS_PACKET_TRACKING -j DROP
+COMMIT
+
