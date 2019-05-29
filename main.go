@@ -242,7 +242,7 @@ func main() {
 		}
 		cert, err := tls.LoadX509KeyPair(*certFlag, *keyFlag)
 		if err != nil {
-			log.Fatal("Cannot load X509 Cert/Key from %#v/%#v: %s", *certFlag, *keyFlag, err)
+			log.Fatalf("Cannot load X509 Cert/Key from %#v/%#v: %s", *certFlag, *keyFlag, err)
 		}
 
 		tlsServer = &dns.Server{
