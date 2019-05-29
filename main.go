@@ -26,7 +26,8 @@ type debounceInfo struct {
 
 type handler struct {
 	dns.Handler
-	upstream           string
+	Upstream           string
+	Client             *dns.Client
 	ptrMap             map[string]string
 	lastResultSent     map[string]debounceInfo
 	lastResultSentLock sync.Mutex
@@ -113,13 +114,26 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			MsgHdr: dns.MsgHdr{Id: r.MsgHdr.Id, Response: true, Rcode: dns.RcodeServerFailure}})
 		return
 	}
-	resp, err := dns.Exchange(r, h.upstream)
+	if h.Client == nil {
+		h.Client = &dns.Client{Net: "udp"}
+	}
+	resp, rtt, err := h.Client.Exchange(r, h.Upstream)
 	if err != nil {
-		log.Printf("Error getting response from %#v: %s", h.upstream, err)
+		log.Printf("Error getting response from %#v: %s", h.Upstream, err)
+		if _, ok := err.(*net.OpError); ok {
+			_ = h.writeMsg(w,
+				&dns.Msg{
+					MsgHdr: dns.MsgHdr{
+						Id: r.MsgHdr.Id, Response: true,
+						RecursionDesired: r.RecursionDesired, RecursionAvailable: true,
+						Rcode: dns.RcodeServerFailure,
+					},
+					Question: r.Question})
+		}
 		return
 	}
 	if !h.IsSilent {
-		log.Printf("Got response from %#v:\n%s", h.upstream, resp)
+		log.Printf("Got response from %#v (rtt=%s):\n%s", h.Upstream, rtt, resp)
 	}
 	for _, answ := range resp.Answer {
 		addrString := ""
@@ -202,9 +216,17 @@ func main() {
 	storeFlag := flag.String("store", "", "Store PTR data to specified file")
 	chrootFlag := flag.String("chroot", "/var/tmp", "chroot to directory after start")
 	silentFlag := flag.Bool("silent", false, "Don't report normal data")
+	clientTimeoutFlag := flag.String("ctmout", "", "Client timeout")
 	flag.Parse()
 
-	h := &handler{upstream: *upstreamServerFlag, DebounceCount: *debounceCountFlag, IsSilent: *silentFlag}
+	h := &handler{Upstream: *upstreamServerFlag, DebounceCount: *debounceCountFlag, IsSilent: *silentFlag}
+	if *clientTimeoutFlag != "" {
+		cltmout, err := time.ParseDuration(*clientTimeoutFlag)
+		if err != nil {
+			log.Fatal("Cannot parse client timeout: ", err)
+		}
+		h.Client = &dns.Client{Net: "udp", Timeout: cltmout}
+	}
 
 	if *chrootFlag != "" {
 		if err := syscall.Chroot(*chrootFlag); err != nil {
