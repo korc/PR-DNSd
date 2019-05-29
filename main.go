@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
 	"net"
@@ -201,14 +202,18 @@ func (h *handler) ReadDb(fname string) (err error) {
 }
 
 const (
-	setcapHelp = "sudo setcap cap_net_bind_service,cap_sys_chroot=ep"
-	chrootHelp = "-chroot ''"
-	listenHelp = "-listen [<ip>]:<port> with port>1024"
+	setcapHelp    = "sudo setcap cap_net_bind_service,cap_sys_chroot=ep"
+	chrootHelp    = "-chroot ''"
+	listenHelp    = "-listen [<ip>]:<port> with port>1024"
+	tlsListenHelp = "-tlslisten [<ip>]:<port> with port>1024"
 )
 
 func main() {
 	upstreamServerFlag := flag.String("upstream", "127.0.0.1:53", "upstream DNS server")
 	listenAddrFlag := flag.String("listen", ":53", "listen address")
+	tlsListenFlag := flag.String("tlslisten", "", "TCP-TLS listener address (requires -cert)")
+	certFlag := flag.String("cert", "server.crt", "TCP-TLS listener certificate")
+	keyFlag := flag.String("key", "", "TCP-TLS certiicate key (default same as -cert value)")
 	debounceDelayFlag := flag.String("debounce", "200ms",
 		"Required time duration between UDP replies to single IP to prevent DoS")
 	debounceCountFlag := flag.Int("count", 10,
@@ -226,6 +231,26 @@ func main() {
 			log.Fatal("Cannot parse client timeout: ", err)
 		}
 		h.Client = &dns.Client{Net: "udp", Timeout: cltmout}
+	}
+
+	var tlsServer *dns.Server
+	var srv *dns.Server
+
+	if *tlsListenFlag != "" {
+		if *keyFlag == "" {
+			*keyFlag = *certFlag
+		}
+		cert, err := tls.LoadX509KeyPair(*certFlag, *keyFlag)
+		if err != nil {
+			log.Fatal("Cannot load X509 Cert/Key from %#v/%#v: %s", *certFlag, *keyFlag, err)
+		}
+
+		tlsServer = &dns.Server{
+			Addr:      *tlsListenFlag,
+			Net:       "tcp-tls",
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
+			Handler:   h,
+		}
 	}
 
 	if *chrootFlag != "" {
@@ -256,27 +281,41 @@ func main() {
 		}
 	}
 
-	srv := dns.Server{Addr: *listenAddrFlag, Net: "udp", Handler: h}
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		if !h.IsSilent {
-			log.Printf("ListenAndServe on %s", *listenAddrFlag)
-		}
-		err := srv.ListenAndServe()
-		if err != nil {
-			if netOpErr, ok := err.(*net.OpError); ok {
-				if scerr, ok := netOpErr.Err.(*os.SyscallError); ok {
-					if scerr.Err == syscall.EACCES {
-						log.Printf("Permission error, perhaps '%s %s' or %s will help?",
-							setcapHelp, os.Args[0], listenHelp)
+	if *listenAddrFlag != "" {
+		srv = &dns.Server{Addr: *listenAddrFlag, Net: "udp", Handler: h}
+		go func() {
+			if !h.IsSilent {
+				log.Printf("ListenAndServe on %s", *listenAddrFlag)
+			}
+			err := srv.ListenAndServe()
+			if err != nil {
+				if netOpErr, ok := err.(*net.OpError); ok {
+					if scerr, ok := netOpErr.Err.(*os.SyscallError); ok {
+						if scerr.Err == syscall.EACCES {
+							log.Printf("Permission error, perhaps '%s %s' or %s will help?",
+								setcapHelp, os.Args[0], listenHelp)
+						}
 					}
 				}
+				log.Fatal("Cannot serve DNS server: ", err)
 			}
-			log.Fatal("Cannot serve DNS server: ", err)
-		}
-	}()
+		}()
+	}
+
+	if tlsServer != nil {
+		go func() {
+			if !h.IsSilent {
+				log.Printf("TLS ListenAndServe on %s", *tlsListenFlag)
+			}
+			err := tlsServer.ListenAndServe()
+			if err != nil {
+				log.Fatalf("Cannot serve TCP-TLS DNS server on %#v: %s", *tlsListenFlag, err)
+			}
+		}()
+	}
 
 	s := <-c
 	if !h.IsSilent {

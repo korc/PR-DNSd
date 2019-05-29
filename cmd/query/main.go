@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -28,6 +31,7 @@ func main() {
 	netProtoFlag := flag.String("netproto", "udp", "Protocol to use (one of udp, tcp or tcp-tls)")
 	timeout := flag.String("timeout", "", "Timeout")
 	serverFlag := flag.String("server", "127.0.0.1:53", "DNS server to query")
+	caCertFlag := flag.String("capem", "", "CA certificates for TLS")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) < 1 {
@@ -63,6 +67,16 @@ func main() {
 		if err != nil {
 			log.Fatalf("Cannot parse timeout %#v: %s", *timeout, err)
 		}
+	}
+
+	if *caCertFlag != "" {
+		cp := x509.NewCertPool()
+		pem, err := ioutil.ReadFile(*caCertFlag)
+		if err != nil {
+			log.Fatalf("Failed to read client certificate authority: %v", err)
+		}
+		cp.AppendCertsFromPEM(pem)
+		clnt.TLSConfig = &tls.Config{RootCAs: cp}
 	}
 
 	if *verboseFlag {
