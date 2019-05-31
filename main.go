@@ -209,11 +209,11 @@ const (
 )
 
 func main() {
-	upstreamServerFlag := flag.String("upstream", "127.0.0.1:53", "upstream DNS server")
+	upstreamServerFlag := flag.String("upstream", "1.1.1.1:53", "upstream DNS server")
 	listenAddrFlag := flag.String("listen", ":53", "listen address")
 	tlsListenFlag := flag.String("tlslisten", "", "TCP-TLS listener address (requires -cert)")
 	certFlag := flag.String("cert", "server.crt", "TCP-TLS listener certificate")
-	keyFlag := flag.String("key", "", "TCP-TLS certiicate key (default same as -cert value)")
+	keyFlag := flag.String("key", "", "TCP-TLS certificate key (default same as -cert value)")
 	debounceDelayFlag := flag.String("debounce", "200ms",
 		"Required time duration between UDP replies to single IP to prevent DoS")
 	debounceCountFlag := flag.Int("count", 10,
