@@ -19,17 +19,17 @@ _If you can't use `setcap`, you have to use `-chroot ""` and `-listen :<high_por
 
 ```
 -cert string
-    TCP-TLS listener certificate (default "server.crt")
+    TCP-TLS listener certificate (required for tls listener)
 -chroot string
     chroot to directory after start (default "/var/tmp")
 -count int
     Count of replies allowed before debounce delay is applied (default 10)
 -ctmout string
-    Client timeout
+    Client timeout for upstream queries
 -debounce string
     Required time duration between UDP replies to single IP to prevent DoS (default "200ms")
 -key string
-    TCP-TLS certiicate key (default same as -cert value)
+    TCP-TLS certificate key (default same as -cert value)
 -listen string
     listen address (default ":53")
 -silent
@@ -37,7 +37,7 @@ _If you can't use `setcap`, you have to use `-chroot ""` and `-listen :<high_por
 -store string
     Store PTR data to specified file
 -tlslisten string
-    TCP-TLS listener address (requires -cert)
+    TCP-TLS listener address (default ":853")
 -upstream string
-    upstream DNS server (default "127.0.0.1:53")
+    upstream DNS server (default "1.1.1.1:53")
 ```

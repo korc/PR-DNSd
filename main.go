@@ -211,8 +211,8 @@ const (
 func main() {
 	upstreamServerFlag := flag.String("upstream", "1.1.1.1:53", "upstream DNS server")
 	listenAddrFlag := flag.String("listen", ":53", "listen address")
-	tlsListenFlag := flag.String("tlslisten", "", "TCP-TLS listener address (requires -cert)")
-	certFlag := flag.String("cert", "server.crt", "TCP-TLS listener certificate")
+	tlsListenFlag := flag.String("tlslisten", ":853", "TCP-TLS listener address")
+	certFlag := flag.String("cert", "", "TCP-TLS listener certificate (required for tls listener)")
 	keyFlag := flag.String("key", "", "TCP-TLS certificate key (default same as -cert value)")
 	debounceDelayFlag := flag.String("debounce", "200ms",
 		"Required time duration between UDP replies to single IP to prevent DoS")
@@ -221,7 +221,7 @@ func main() {
 	storeFlag := flag.String("store", "", "Store PTR data to specified file")
 	chrootFlag := flag.String("chroot", "/var/tmp", "chroot to directory after start")
 	silentFlag := flag.Bool("silent", false, "Don't report normal data")
-	clientTimeoutFlag := flag.String("ctmout", "", "Client timeout")
+	clientTimeoutFlag := flag.String("ctmout", "", "Client timeout for upstream queries")
 	flag.Parse()
 
 	h := &handler{Upstream: *upstreamServerFlag, DebounceCount: *debounceCountFlag, IsSilent: *silentFlag}
@@ -236,7 +236,7 @@ func main() {
 	var tlsServer *dns.Server
 	var srv *dns.Server
 
-	if *tlsListenFlag != "" {
+	if *tlsListenFlag != "" && *certFlag != "" {
 		if *keyFlag == "" {
 			*keyFlag = *certFlag
 		}
@@ -312,9 +312,19 @@ func main() {
 			}
 			err := tlsServer.ListenAndServe()
 			if err != nil {
+				if netOpErr, ok := err.(*net.OpError); ok {
+					if scerr, ok := netOpErr.Err.(*os.SyscallError); ok {
+						if scerr.Err == syscall.EACCES {
+							log.Printf("Permission error, perhaps '%s %s' or %s will help?",
+								setcapHelp, os.Args[0], tlsListenHelp)
+						}
+					}
+				}
 				log.Fatalf("Cannot serve TCP-TLS DNS server on %#v: %s", *tlsListenFlag, err)
 			}
 		}()
+	} else if srv == nil {
+		log.Fatalf("No DNS server listeners defined")
 	}
 
 	s := <-c
