@@ -15,6 +15,15 @@ dig -x $(dig +short google.com)
 
 _If you can't use `setcap`, you have to use `-chroot ""` and `-listen :<high_port>` options, or run as `root`._
 
+## Use cases
+
+- run as local host DNS service, to fix your `netstat`/`tcpview`/`lsof` etc. output
+- as enterprise-internal DNS server, to also be able to do meaningful EDR/IR and log analysis
+- as cloud service, to also collect Passive DNS data from non-enterprise (home, BYOD etc.) devices
+  - _hint: you probably want to configure DDoS protection options_
+- in cloud as DNS-over-TLS server, to additionally provide private DNS for supporting devices (ex: Android 9's private DNS setting)
+  - ex: domain pattern based firewall/proxy configuration for mobile devices
+
 ## Options
 
 ```
