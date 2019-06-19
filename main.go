@@ -32,6 +32,7 @@ type handler struct {
 	ptrMap             map[string]string
 	lastResultSent     map[string]debounceInfo
 	lastResultSentLock sync.Mutex
+	ptrMapLock         sync.Mutex
 	DebounceDelay      time.Duration
 	DebounceCount      int
 	StoreDB            *badger.DB
@@ -151,7 +152,9 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			log.Printf("Could not transform to reverse address: %#v", answ)
 			continue
 		}
+		h.ptrMapLock.Lock()
 		h.ptrMap[ptr] = q.Name
+		h.ptrMapLock.Unlock()
 		if h.StoreDB != nil {
 			if err := h.StoreDB.Update(func(txn *badger.Txn) error {
 				if err := txn.Set([]byte(ptr), []byte(q.Name)); err != nil {
