@@ -2,6 +2,10 @@
 
 Passive-Recursive DNS daemon.
 
+## What does it do?
+
+![This](solved-netstat.jpg)
+
 ## Quickstart
 
 ```sh
@@ -23,6 +27,13 @@ _If you can't use `setcap`, you have to use `-chroot ""` and `-listen :<high_por
   - _hint: you probably want to configure DDoS protection options_
 - in cloud as DNS-over-TLS server, to additionally provide private DNS for supporting devices (ex: Android 9's private DNS setting)
   - ex: domain pattern based firewall/proxy configuration for mobile devices
+
+### Running as your own private server for Android9's Private DNS settings
+
+After appropriate `setcap`, run:
+```
+PR-DNSd -tlslisten :853 -cert YOUR_SERVER_CRT_KEY_PEM -upstream 1.1.1.1:53 -store pr-dnsd
+```
 
 ## Options
 
