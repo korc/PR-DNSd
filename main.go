@@ -219,7 +219,7 @@ func main() {
 	keyFlag := flag.String("key", "", "TCP-TLS certificate key (default same as -cert value)")
 	debounceDelayFlag := flag.String("debounce", "200ms",
 		"Required time duration between UDP replies to single IP to prevent DoS")
-	debounceCountFlag := flag.Int("count", 10,
+	debounceCountFlag := flag.Int("count", 100,
 		"Count of replies allowed before debounce delay is applied")
 	storeFlag := flag.String("store", "", "Store PTR data to specified file")
 	chrootFlag := flag.String("chroot", "/var/tmp", "chroot to directory after start")
