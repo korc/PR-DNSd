@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -209,7 +210,7 @@ const (
 )
 
 func main() {
-	upstreamServerFlag := flag.String("upstream", "1.1.1.1:53", "upstream DNS server")
+	upstreamServerFlag := flag.String("upstream", "1.1.1.1:53", "upstream DNS server (tcp-tls:// prefix for DoT)")
 	listenAddrFlag := flag.String("listen", ":53", "listen address")
 	tlsListenFlag := flag.String("tlslisten", ":853", "TCP-TLS listener address")
 	certFlag := flag.String("cert", "", "TCP-TLS listener certificate (required for tls listener)")
@@ -231,6 +232,15 @@ func main() {
 			log.Fatal("Cannot parse client timeout: ", err)
 		}
 		h.Client = &dns.Client{Net: "udp", Timeout: cltmout}
+	}
+
+	if strings.Contains(*upstreamServerFlag, "://") {
+		idx := strings.Index(*upstreamServerFlag, "://")
+		if h.Client == nil {
+			h.Client = &dns.Client{}
+		}
+		h.Client.Net = (*upstreamServerFlag)[:idx]
+		h.Upstream = (*upstreamServerFlag)[idx+len("://"):]
 	}
 
 	var tlsServer *dns.Server

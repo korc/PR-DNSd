@@ -59,5 +59,6 @@ PR-DNSd -tlslisten :853 -cert YOUR_SERVER_CRT_KEY_PEM -upstream 1.1.1.1:53 -stor
 -tlslisten string
     TCP-TLS listener address (default ":853")
 -upstream string
-    upstream DNS server (default "1.1.1.1:53")
+    upstream DNS server (tcp-tls:// prefix for DoT) (default "1.1.1.1:53")
+    (with tls and chroot, ensure ca-certificates and resolv.conf in chroot are properly set up)
 ```
