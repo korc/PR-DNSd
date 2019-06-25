@@ -1,0 +1,16 @@
+[Unit]
+Description=PR-DNSd as local resolver
+After=network.target
+
+[Service]
+Environment=PRDNSD_UPSTREAM=tcp-tls://1.1.1.1:853 PRDNSD_ROOT=/var/lib/PR-DNSd PRDNSD_LISTEN=127.0.0.1:53 CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt PRDNSD_STORE=cache
+EnvironmentFile=-/etc/default/PR-DNSd
+User=daemon
+AmbientCapabilities=CAP_SYS_CHROOT CAP_NET_BIND_SERVICE
+PermissionsStartOnly=true
+ExecStartPre=/usr/bin/install -D -o daemon -d "${PRDNSD_ROOT}"
+ExecStartPre=-/bin/cp --parents -t "${PRDNSD_ROOT}" "$CA_BUNDLE"
+ExecStart=/usr/local/bin/PR-DNSd -upstream "$PRDNSD_UPSTREAM" -listen "$PRDNSD_LISTEN" -chroot "$PRDNSD_ROOT" -store "$PRDNSD_STORE" $PRDNSD_ARGS
+
+[Install]
+WantedBy=multi-user.target
