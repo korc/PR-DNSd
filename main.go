@@ -173,10 +173,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func (h *handler) ReadDb(fname string) (err error) {
-	opts := badger.DefaultOptions
-	opts.Dir = fname
-	opts.ValueDir = fname
-	if h.StoreDB, err = badger.Open(opts); err != nil {
+	if h.StoreDB, err = badger.Open(badger.DefaultOptions(fname)); err != nil {
 		return err
 	}
 	h.ptrMap = make(map[string]string)
