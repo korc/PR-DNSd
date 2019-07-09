@@ -2,7 +2,7 @@
 
 Passive-Recursive DNS daemon.
 
-## What does it do?
+## What does it do
 
 ![This](solved-netstat.jpg)
 
@@ -31,19 +31,20 @@ _If you can't use `setcap`, you have to use `-chroot ""` and `-listen :<high_por
 ### Running as your own private server for Android9's Private DNS settings
 
 After appropriate `setcap`, run:
-```
+
+```sh
 PR-DNSd -tlslisten :853 -cert YOUR_SERVER_CRT_KEY_PEM -upstream 1.1.1.1:53 -store pr-dnsd
 ```
 
 ## Options
 
-```
+```txt
 -cert string
     TCP-TLS listener certificate (required for tls listener)
 -chroot string
     chroot to directory after start (default "/var/tmp")
 -count int
-    Count of replies allowed before debounce delay is applied (default 10)
+    Count of replies allowed before debounce delay is applied (default 100)
 -ctmout string
     Client timeout for upstream queries
 -debounce string

@@ -56,9 +56,8 @@ func (h *handler) checkNoDoS(w dns.ResponseWriter) bool {
 					h.DebounceDelay, lastReply.cnt, h.DebounceCount)
 				if lastReply.cnt <= 0 {
 					return false
-				} else {
-					h.lastResultSent[ip] = debounceInfo{tm: time.Now(), cnt: lastReply.cnt - 1}
 				}
+				h.lastResultSent[ip] = debounceInfo{tm: time.Now(), cnt: lastReply.cnt - 1}
 			} else {
 				h.lastResultSent[ip] = debounceInfo{tm: time.Now(), cnt: h.DebounceCount}
 			}
@@ -107,9 +106,8 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 					Ptr: v,
 				}}})
 			return
-		} else {
-			log.Printf("PTR not in cache: %#v", q.Name)
 		}
+		log.Printf("PTR not in cache: %#v", q.Name)
 	}
 	if !r.RecursionDesired {
 		log.Printf("Client %s doesn't want recursion", w.RemoteAddr())
