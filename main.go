@@ -218,7 +218,7 @@ func main() {
 	debounceCountFlag := flag.Int("count", 100,
 		"Count of replies allowed before debounce delay is applied")
 	storeFlag := flag.String("store", "", "Store PTR data to specified file")
-	chrootFlag := flag.String("chroot", "/var/tmp", "chroot to directory after start")
+	chrootFlag := flag.String("chroot", DefaultChroot, "chroot to directory after start")
 	silentFlag := flag.Bool("silent", false, "Don't report normal data")
 	clientTimeoutFlag := flag.String("ctmout", "", "Client timeout for upstream queries")
 	flag.Parse()
@@ -262,7 +262,7 @@ func main() {
 	}
 
 	if *chrootFlag != "" {
-		if err := syscall.Chroot(*chrootFlag); err != nil {
+		if err := doChroot(*chrootFlag); err != nil {
 			if err == syscall.EPERM {
 				log.Printf("Permission error, perhaps '%s %s' or %s will help?",
 					setcapHelp, os.Args[0], chrootHelp)
